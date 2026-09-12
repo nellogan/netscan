@@ -3,7 +3,7 @@ name: CI-x86_64
 on:
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - 'src/**'
       - 'include/**'
@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 jobs:
-  CI-x86_64:
+  ci:
     runs-on: ubuntu-latest
 
     steps:
