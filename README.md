@@ -20,7 +20,6 @@ requiring root privileges.
 - **IPv4 utilities:** quickly determine the local LAN address, network address, and broadcast address.
 
 ## Usage
-
 ```text
     netscan --help
     Usage: netscan [OPTION...] [CIDR]
@@ -38,8 +37,8 @@ requiring root privileges.
                                  (default: ping)
       -N, --network              Print network base IPv4 address and exit
       -p, --port=PORT            Target port for TCP mode (default: 443)
-      -r, --recv-batch=NUM       Receive batch size (default: 256)
-      -s, --send-batch=NUM       Send batch size (default: 16)
+      -r, --recv-batch=NUM       Receive batch size (default: 128)
+      -s, --send-batch=NUM       Send batch size (default: 4)
       -t, --timeout=MS           Max timeout / RTT in ms (default: 800)
       -?, --help                 Give this help list
           --usage                Give a short usage message
