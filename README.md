@@ -1,80 +1,262 @@
-## Install
-    git clone https://github.com/nellogan/netscan.git
-    #Optionally run tests first: make test-sanitizers && make clean-all && make test-valgrind
-    make
-    make clean
-    sudo make install
-    #Optionally add to path via bashrc:
-    #echo 'export PATH="$PATH:/usr/local/netscan/bin"' >> ~/.bashrc
+<div align="center">
 
-## Uninstall
-    sudo make uninstall
-    #Do not forget to remove 'PATH="$PATH:/usr/local/netscan/bin"' from ~/.bashrc
+# netscan
 
-## Examples
-Note: if not added to path replace 'netscan' with './bin/netscan'.
+[![CI-x86_64 Status](https://github.com/nellogan/netscan/actions/workflows/CI-x86_64.yml/badge.svg)](https://github.com/nellogan/netscan/actions/workflows/CI-x86_64.yml)
+[![CI-aarch64 Status](https://github.com/nellogan/netscan/actions/workflows/CI-aarch64.yml/badge.svg)](https://github.com/nellogan/netscan/actions/workflows/CI-aarch64.yml)
 
-### Get help:
+</div>
 
+Netscan is a high performance Linux IPv4 network host discovery and scanning
+tool. It performs ICMP ping scans, TCP scans, and ARP table inspection without
+requiring root privileges.
+
+## Features
+- **Unprivileged:** designed to run without root access.
+- **ICMP discovery:** sweep IPv4 networks using ICMP Echo Requests.
+- **TCP scanning:** discover hosts with a specified TCP port open.
+- **ARP inspection:** inspect the local kernel ARP/neighbor table.
+- **Reverse DNS:** optionally resolve discovered IP addresses to hostnames.
+- **IPv4 utilities:** quickly determine the local LAN address, network address, and broadcast address.
+
+## Usage
+
+```text
     netscan --help
-    Usage: netscan [OPTION...] IP_ADDR_OR_CIDR
-    netscan -- scan either an IPv4 address or a range of IPv4 addresses (CIDR notation)
-    at port 443(HTTPS). By default, will attempt a TCP connection. Send ICMP
-    packet(s) (via ping) if the -p switch is provided instead. Particularly useful
-    for scanning a LAN subnet (assuming permission to do so). This program is a
-    proof of concept and not as powerful as nmap but is straight forward,
-    lightweight, and host discovery (even if ping is not available). Requires the
-    'ping' commandline program to be installed to use the -p switch.
+    Usage: netscan [OPTION...] [CIDR]
+    netscan -- a high-performance Linux IPv4 network host discovery and scanning
+    tool. It performs ICMP ping scans, TCP scans, and ARP table inspection without
+    requiring root privileges.
     
-      -p, --ping_toggle          Toggle that will attempt a TCP connection in lieu
-                                 of a ping to determine if host or hosts are up.
+      -B, --broadcast            Print network broadcast IPv4 address and exit
+      -c, --probes=NUM           Max concurrent probes (default: 4096)
+      -d, --dns=0|1              Enable/Disable reverse DNS resolution (default:
+                                 1)
+      -l, --payload=BYTES        ICMP payload length (default: 56)
+      -L, --local-ip             Print local LAN IPv4 address and exit
+      -m, --mode=MODE            Select scan/operation mode: ping, tcp, arp
+                                 (default: ping)
+      -N, --network              Print network base IPv4 address and exit
+      -p, --port=PORT            Target port for TCP mode (default: 443)
+      -r, --recv-batch=NUM       Receive batch size (default: 256)
+      -s, --send-batch=NUM       Send batch size (default: 16)
+      -t, --timeout=MS           Max timeout / RTT in ms (default: 800)
       -?, --help                 Give this help list
           --usage                Give a short usage message
       -V, --version              Print program version
-    
-    Report bugs to <https://github.com/nellogan/netscan/issues>.
+```
 
-### Scan a single IPv4 address
-Try scanning Google's public DNS IPv4 address:
+## Getting Started
 
-    netscan 8.8.8.8
+```bash
+git clone https://github.com/nellogan/netscan.git
+cd netscan
+make
+./bin/default/netscan --help
+./bin/default/netscan 192.168.1.0/24
+```
 
-#### Result:
+## Modes
+### ARP Table
 
-    Host(s) found:
-        IP Addr: 8.8.8.8,               hostname: dns.google
+Inspect the cached ARP/neighbor table for hosts already known to the local system:
 
-### Scan a range of IPv4 addresses using the Classless Inter-Domain Routing (CIDR) notation. 
-Here, Google's public DNS IPv4 address (8.8.8.8) and two other Google IPv4 addresses 8.8.8.9 and 8.8.8.10 are scanned 
-by passing "8.8.8.8/30". Since these two additional addresses do not respond to TCP connections or ping (ICMP) requests, 
-they will not be reported as "found."
+```bash
+./bin/default/netscan -m arp
+```
 
-    netscan 8.8.8.8/30
-    
-#### Result:
+Example output:
 
-    Host(s) found:
-        IP Addr: 8.8.8.8,               hostname: dns.google
+```text
+IP ADDRESS      | MAC ADDRESS       | INTERFACE  | HOSTNAME                      
+------------------------------------------------------------------------------------
+192.168.1.1     | ab:cd:ef:12:34:56 | wlo1       | 192.168.1.1                   
+192.168.1.14    | 78:90:ab:cd:ef:12 | wlo1       | 192.168.1.14 
+192.168.1.42    | 34:56:78:90:ab:cd | wlo1       | 192.168.1.42 
+------------------------------------------------------------------------------------
+```
 
+### ICMP Ping Scan
+        
+Perform an ICMP Echo sweep across an IPv4 CIDR range:
 
-### Send ping requests instead of TCP connection attempts:
+```bash
+./bin/default/netscan -m ping 192.168.1.0/24
+```
 
-    netscan -p 8.8.8.8/30
+Example output:
 
-#### Result:
+```text
+[*] Starting ICMP Ping Scan on 256 hosts from 192.168.1.0/24 (payload=0, probes=4096, timeout_ms=1200, send_batch=4, recv_batch=128, dns=true)
 
-    Host(s) found:
-        IP Addr: 8.8.8.8,               hostname: dns.google
+[+] IP: 192.168.1.1     | Hostname: 192.168.1.1                              | RTT:   7.06 ms | TTL:  64
+[+] IP: 192.168.1.14    | Hostname: 192.168.1.14                             | RTT:   7.59 ms | TTL:  64
+[+] IP: 192.168.1.42    | Hostname: 192.168.1.42                             | RTT:   0.10 ms | TTL:  64
 
-## Notes
+========================================
+        ICMP PING SCAN COMPLETE        
+========================================
+Total unique responsive hosts found : 3
+Total scan time                     : 1.314 seconds
+TX Throttles / Drops                : 0
+RX Queue Overflows                  : 0
+ICMP Echo Replies Received          : 3
+Unmatched Echo Replies              : 0
+Probe Timeouts                      : 251
+========================================
 
-TCP connection attempts will not be retransmitted for faster scanning. Linux generally sets the initial threshold to 1
-second. Here socket send timeout is set to 0.05 seconds so no re-transmissions will occur. Scanning a common subnet of 
-/24 (255 hosts) will take a maximum of 12.75 seconds assuming all 255 hosts were actually sent TCP SYN requests while 
-ping attempts will take a maximum of 254 seconds (1 second timeout). Generally the connect scan method will return much 
-sooner than 12.75 seconds due to ARP requests requiring a response (if not in cache) before bothering to send a TCP SYN 
-packet. 
+```
 
-The valgrind suppressions file in ./suppression is added due to an avahi bug where calling getnameinfo() will leak to 
-reachable memory when the DNS cannot resolve the requested IP address. Reproducible by attempting to call getnameinfo() 
-on a loopback address such as 127.233.233.233.
+The default scan mode is ping, so the mode can also be omitted:
+
+```bash
+./bin/default/netscan 192.168.1.0/24
+```
+
+### TCP Scan
+
+Scan for hosts with a specific TCP port accepting connections. For example, 
+to find hosts with HTTPS available on port 443:
+
+```bash
+./bin/default/netscan -m tcp -p 443 192.168.1.0/24
+```
+
+Example output:
+
+```text
+[*] Starting TCP Scan on 256 hosts from 192.168.1.0/24 (Port: 443, probes=4096, timeout_ms=2000ms, send_batch=4, dns=true)
+
+[+] IP: 192.168.1.1     | Hostname: 192.168.1.1                              | Port: 443   | RTT: 5.8 ms | OPEN
+
+========================================
+       TCP SCAN COMPLETE        
+========================================
+Target Port                         : 443
+Total unique open hosts found       : 1
+Total scan time                     : 2.073 seconds
+========================================
+```
+
+## Performance
+
+The following benchmarks compare Netscan against roughly equivalent nmap scans on a /24 LAN.
+
+### ICMP Ping Scan
+
+Approximate nmap equivalent:
+
+```bash
+sudo nmap -T5 -n -sn -PE --disable-arp-ping --max-retries 0 "$CIDR"
+```
+
+Benchmark:
+
+```bash
+./benchmark.sh -c "$CIDR" -b nmap -m ping
+./benchmark.sh -c "$CIDR" -b netscan -m ping
+```
+
+Example results:
+
+```text
+=== Benchmarking PING Sweep (192.168.1.0/24 using nmap) ===
+Scan Time: 3.67 seconds
+
+=== Benchmarking PING Sweep (192.168.1.0/24 using netscan) ===
+Scan Time: 1.28 seconds
+```
+
+Result: Netscan was approximately ~2.87 times faster for this /24 LAN scan.
+
+### TCP Scan
+
+Approximate nmap equivalent:
+
+```bash
+nmap -T5 -n -sT -Pn -p "$PORT" --disable-arp-ping --max-retries 0 "$CIDR"
+```
+
+Benchmark:
+
+```bash
+./benchmark.sh -c "$CIDR" -b nmap -m tcp -p "$PORT"
+./benchmark.sh -c "$CIDR" -b netscan -m tcp -p "$PORT"
+```
+
+Example results:
+
+```text
+=== Benchmarking TCP Sweep (192.168.1.0/24 using nmap) ===
+Scan Time: 0.85 seconds
+
+=== Benchmarking TCP Sweep (192.168.1.0/24 using netscan) ===
+Scan Time: 0.67 seconds
+```
+
+Result: Netscan was approximately ~1.27 times faster for this /24 LAN scan.
+
+NOTE: Benchmark results are workload and network dependent. These measurements are representative and should not be 
+interpreted as universal performance guarantees.
+
+## Tuning
+
+Netscan exposes several options for tuning scan performance:
+
+    --probes: maximum number of concurrent probes.
+    --timeout: maximum probe timeout in milliseconds.
+    --send-batch: number of packets sent per batch.
+    --recv-batch: number of packets received per batch.
+    --dns: enable or disable reverse DNS resolution.
+    --payload: configure the ICMP payload size.
+
+For example:
+
+```bash
+./bin/default/netscan \
+  --probes 4096 \
+  --timeout 800 \
+  --send-batch 16 \
+  --recv-batch 256 \
+  --dns 0 \
+  192.168.1.0/24
+```
+
+## Testing
+
+### Native Local Testing
+
+Format and lint the source:
+
+```bash
+make format
+make lint
+```
+
+Run the test suite with AddressSanitizer, LeakSanitizer, and UndefinedBehaviorSanitizer:
+
+```bash
+make CONFIG=xsan test
+```
+
+Run the test suite with MemorySanitizer:
+
+```bash
+make CONFIG=msan test
+```
+
+Run the test suite under Valgrind:
+
+```bash
+make test-valgrind
+```
+
+### Containerized Testing
+
+Run the containerized test suite locally:
+
+```bash
+bash ./container-test.sh
+```
+
+The containerized tests cover native x86_64 execution as well as AArch64 execution through emulation.
