@@ -255,7 +255,7 @@ make test-valgrind
 Run the containerized test suite locally:
 
 ```bash
-bash ./container-test.sh
+bash ./test-container.sh
 ```
 
 The containerized tests cover native x86_64 execution as well as AArch64 execution through emulation.

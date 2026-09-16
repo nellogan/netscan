@@ -1,8 +1,9 @@
 .*
+!.gitignore
 !.clang-format
 !.clang-tidy
 !.dockerignore
-!.github/**
+!.github/
 
 bin/
 build/
